@@ -44,10 +44,10 @@ def main():
     archives_all = [os.path.splitext(os.path.basename(link))[0] for link in links]
     links_left_to_download = set(archives_all) - set(archives_already_downloaded)
     logging.info('%d archives left do download.', len(links_left_to_download))
-    # download_wrapper = partial(download_and_extract, target_folder)
+    download_wrapper = partial(download_and_extract, target_folder)
     # for link in links:
     #     download_and_extract(target=target_folder, url=links_left_to_download)
-    # result = Pool(num_parallel).map(download_wrapper, links_left_to_download)
+    result = Pool(num_parallel).map(download_wrapper, links)
 
 if __name__ == '__main__':
     main()
