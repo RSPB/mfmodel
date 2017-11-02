@@ -47,6 +47,7 @@ def main():
                             for flakpath in glob.glob(flac_source + '*.flac'):
                                 filename_noext = os.path.splitext(os.path.basename(flakpath))[0]
                                 wave_filename = os.path.join(dest_dir, filename_noext + '.wav')
+                                tfm.silence()
                                 tfm.build(flakpath, wave_filename)
                         else:
                             raise NotImplemented('Missing converter')
