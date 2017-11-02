@@ -31,6 +31,7 @@ def get_links(url):
 
 
 def main():
+    simulate = True
     setup_logging()
     num_parallel = 4
     voxforge_url = 'http://www.repository.voxforge1.org/downloads/SpeechCorpus/Trunk/Audio/Main/16kHz_16bit'
@@ -44,10 +45,17 @@ def main():
     archives_all = [os.path.splitext(os.path.basename(link))[0] for link in links]
     links_left_to_download = set(archives_all) - set(archives_already_downloaded)
     logging.info('%d archives left do download.', len(links_left_to_download))
-    download_wrapper = partial(download_and_extract, target_folder)
-    # for link in links:
-    #     download_and_extract(target=target_folder, url=links_left_to_download)
-    result = Pool(num_parallel).map(download_wrapper, links)
+    if len(links_left_to_download) == 0:
+        logging.info('Nothing left to do, exiting.')
+        return 0
+
+    if not simulate:
+        if num_parallel > 1:
+            download_wrapper = partial(download_and_extract, target_folder)
+            result = Pool(num_parallel).map(download_wrapper, links)
+        else:
+            for link in links:
+                download_and_extract(target=target_folder, url=links_left_to_download)
 
 if __name__ == '__main__':
     main()
