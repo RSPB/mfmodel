@@ -18,7 +18,7 @@ def main():
     output_dir = '/home/tracek/Data/gender/raw/'
     [pathlib.Path(os.path.join(output_dir, gender_dir)).mkdir(parents=True, exist_ok=True) for gender_dir in genders]
 
-    if num_parallel>2:
+    if num_parallel>1:
         processor_wrapper = partial(process_data, download_folder, genders, output_dir)
         result = Pool(num_parallel).map(processor_wrapper, os.listdir(path=download_folder))
     else:
