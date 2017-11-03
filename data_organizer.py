@@ -1,29 +1,39 @@
 import os
+import time
 import glob
 import sox
 import shutil
 import re
 import pathlib
+import logging
+import tqdm
 from functools import partial
 from multiprocessing import Pool
 from appconfig import setup_logging
 
 def main():
-    num_parallel = 2
+    t0 = time.time()
+    num_parallel = 14
     setup_logging()
 
     genders = {'male', 'female'}
     download_folder = '/home/tracek/Data/gender/Voxforge'
-    download_folder = '/home/tracek/Data/gender/test'
+    # download_folder = '/home/tracek/Data/gender/test'
     output_dir = '/home/tracek/Data/gender/raw/'
     [pathlib.Path(os.path.join(output_dir, gender_dir)).mkdir(parents=True, exist_ok=True) for gender_dir in genders]
 
-    if num_parallel>1:
+    dirs_for_processing = os.listdir(path=download_folder)
+    if num_parallel > 1:
         processor_wrapper = partial(process_data, download_folder, genders, output_dir)
-        result = Pool(num_parallel).map(processor_wrapper, os.listdir(path=download_folder))
+        pool = Pool(num_parallel)
+        for _ in tqdm.tqdm(pool.imap_unordered(processor_wrapper, dirs_for_processing), total=len(dirs_for_processing)):
+            pass
+        pool.close()
+        pool.join()
     else:
-        for folder in os.listdir(path=download_folder):
+        for folder in dirs_for_processing:
             process_data(download_folder, genders, output_dir, folder)
+    print('Run time: {:.2f} s'.format(time.time() - t0))
 
 
 def process_data(download_folder, genders, output_dir, folder):
@@ -34,6 +44,7 @@ def process_data(download_folder, genders, output_dir, folder):
         readme_path = os.path.join(source_dir, 'etc/readme')
     else:
         raise ValueError('No readme in %s' % source_dir)
+
     with open(readme_path, 'r') as readme:
         for line in readme:
             match = re.search("Gender: (\W*\w+\W*)", line, re.IGNORECASE)
@@ -42,22 +53,33 @@ def process_data(download_folder, genders, output_dir, folder):
                 gender = cleanstr.lower()
                 if gender in genders:
                     dest_dir = os.path.join(output_dir, gender, folder)
-                    waves_source = os.path.join(source_dir, 'wav/')
-                    flac_source = os.path.join(source_dir, 'flac/')
-
-                    if os.path.isdir(waves_source):
-                        shutil.copytree(waves_source, dest_dir)
-                    elif os.path.isdir(flac_source):
-                        os.makedirs(dest_dir)
-                        tfm = sox.Transformer()
-                        for flakpath in glob.glob(flac_source + '*.flac'):
-                            filename_noext = os.path.splitext(os.path.basename(flakpath))[0]
-                            wave_filename = os.path.join(dest_dir, filename_noext + '.wav')
-                            tfm.silence(location=0, silence_threshold=0.1, min_silence_duration=0.3)
-                            tfm.build(flakpath, wave_filename)
+                    if os.path.isdir(os.path.join(source_dir, 'wav/')):
+                        source = os.path.join(source_dir, 'wav/')
+                    elif os.path.isdir(os.path.join(source_dir, 'flac/')):
+                        source = os.path.join(source_dir, 'flac/')
                     else:
                         raise NotImplemented('Missing converter')
-                    shutil.copy(readme_path, dest_dir)
+
+                    os.makedirs(dest_dir)
+                    for path in glob.glob(source + '*'):
+                        filename_noext = os.path.splitext(os.path.basename(path))[0]
+                        wave_filename = os.path.join(dest_dir, filename_noext + '.wav')
+                        tfm = sox.Transformer()
+                        tfm.set_globals(dither=True, guard=False)
+                        tfm.norm()
+                        tfm.silence(location=0, silence_threshold=0.5, min_silence_duration=0.3)
+                        tfm.build(path, wave_filename)
+                        if os.stat(wave_filename).st_size < 50: # bytes
+                            # logging.warning('Removing silence killed the signal in file %s. '
+                            #                 'Reverting.', path)
+                            os.remove(wave_filename)
+                            tfm = sox.Transformer()
+                            # tfm.loudness()
+                            # tfm.silence(location=0, silence_threshold=0.05, min_silence_duration=0.3)
+                            tfm.build(path, wave_filename)
+                            if os.stat(wave_filename).st_size < 50:
+                                logging.error('Recovery failed !!!')
+                    shutil.copy(readme_path, os.path.join(dest_dir, 'README'))
 
 
 if __name__ == '__main__':

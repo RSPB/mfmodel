@@ -3,6 +3,7 @@ import re
 import urllib
 import tarfile
 import logging
+import tqdm
 from retrying import retry
 from bs4 import BeautifulSoup
 from multiprocessing import Pool
@@ -52,10 +53,12 @@ def main():
     if not simulate:
         if num_parallel > 1:
             download_wrapper = partial(download_and_extract, target_folder)
-            result = Pool(num_parallel).map(download_wrapper, links)
+            pool = Pool(num_parallel)
+            for _ in tqdm.tqdm(pool.imap_unordered(download_wrapper, links)):
+                pass
         else:
             for link in links:
-                download_and_extract(target=target_folder, url=links_left_to_download)
+                download_and_extract(target=target_folder, url=link)
 
 if __name__ == '__main__':
     main()
