@@ -11,6 +11,8 @@ from functools import partial
 from multiprocessing import Pool
 from appconfig import setup_logging
 
+min_acceptable_filesize = 20000 # bytes
+
 def main():
     t0 = time.time()
     num_parallel = 14
@@ -52,11 +54,13 @@ def process_data(download_folder, genders, output_dir, folder):
                 cleanstr = re.sub('\W+', '', match.group(1))
                 gender = cleanstr.lower()
                 if gender in genders:
+                    convert = False
                     dest_dir = os.path.join(output_dir, gender, folder)
                     if os.path.isdir(os.path.join(source_dir, 'wav/')):
                         source = os.path.join(source_dir, 'wav/')
                     elif os.path.isdir(os.path.join(source_dir, 'flac/')):
                         source = os.path.join(source_dir, 'flac/')
+                        convert = True
                     else:
                         raise NotImplemented('Missing converter')
 
@@ -65,20 +69,24 @@ def process_data(download_folder, genders, output_dir, folder):
                         filename_noext = os.path.splitext(os.path.basename(path))[0]
                         wave_filename = os.path.join(dest_dir, filename_noext + '.wav')
                         tfm = sox.Transformer()
-                        tfm.set_globals(dither=True, guard=False)
+                        tfm.set_globals(dither=True, guard=True)
                         tfm.norm()
-                        tfm.silence(location=0, silence_threshold=0.5, min_silence_duration=0.3)
+                        tfm.silence(location=0, silence_threshold=0.25, min_silence_duration=0.3)
                         tfm.build(path, wave_filename)
-                        if os.stat(wave_filename).st_size < 50: # bytes
-                            # logging.warning('Removing silence killed the signal in file %s. '
-                            #                 'Reverting.', path)
+
+                        original_file_size = os.stat(path).st_size
+                        new_size = os.stat(wave_filename).st_size
+                        if new_size < min_acceptable_filesize < original_file_size:
+                            logging.warning('Removing silence severely shortened signal %s. Original: %d kB '
+                                            'New: %d kB. Recovering.', path, original_file_size // 1000,
+                                            new_size // 1000)
                             os.remove(wave_filename)
-                            tfm = sox.Transformer()
-                            # tfm.loudness()
-                            # tfm.silence(location=0, silence_threshold=0.05, min_silence_duration=0.3)
-                            tfm.build(path, wave_filename)
-                            if os.stat(wave_filename).st_size < 50:
-                                logging.error('Recovery failed !!!')
+                            if convert:
+                                tfm = sox.Transformer()
+                                tfm.build(path, wave_filename)
+                            else:
+                                shutil.copy(path, wave_filename)
+
                     shutil.copy(readme_path, os.path.join(dest_dir, 'README'))
 
 
