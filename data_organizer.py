@@ -12,6 +12,7 @@ from multiprocessing import Pool
 from appconfig import setup_logging
 
 min_acceptable_filesize = 20000 # bytes
+DEBUG = True
 
 def main():
     t0 = time.time()
@@ -80,6 +81,13 @@ def process_data(download_folder, genders, output_dir, folder):
                             logging.warning('Removing silence severely shortened signal %s. Original: %d kB '
                                             'New: %d kB. Recovering.', path, original_file_size // 1000,
                                             new_size // 1000)
+                            if DEBUG and new_size > 0:
+                                debug_dest = os.path.join(output_dir, 'DEBUG')
+                                debug_filename = filename_noext + '_debug.wav'
+                                os.makedirs(debug_dest, exist_ok=True)
+                                shutil.copy(wave_filename, os.path.join(debug_dest, debug_filename))
+                                shutil.copy(path, debug_dest)
+                                logging.debug('Copied original and debug file to %s', debug_dest)
                             os.remove(wave_filename)
                             if convert:
                                 tfm = sox.Transformer()
