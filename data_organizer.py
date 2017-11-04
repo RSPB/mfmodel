@@ -11,8 +11,8 @@ from functools import partial
 from multiprocessing import Pool
 from appconfig import setup_logging
 
-min_acceptable_filesize = 20000 # bytes
-DEBUG = True
+min_acceptable_filesize = 15000 # bytes
+recover = False
 
 def main():
     t0 = time.time()
@@ -72,28 +72,29 @@ def process_data(download_folder, genders, output_dir, folder):
                         tfm = sox.Transformer()
                         tfm.set_globals(dither=True, guard=True)
                         tfm.norm()
-                        tfm.silence(location=0, silence_threshold=0.25, min_silence_duration=0.3)
+                        tfm.silence(location=0, silence_threshold=0.5, min_silence_duration=0.3)
                         tfm.build(path, wave_filename)
 
                         original_file_size = os.stat(path).st_size
                         new_size = os.stat(wave_filename).st_size
                         if new_size < min_acceptable_filesize < original_file_size:
                             logging.warning('Removing silence severely shortened signal %s. Original: %d kB '
-                                            'New: %d kB. Recovering.', path, original_file_size // 1000,
+                                            'New: %d kB.', path, original_file_size // 1000,
                                             new_size // 1000)
-                            if DEBUG and new_size > 0:
+                            if __debug__ and new_size > 44:
                                 debug_dest = os.path.join(output_dir, 'DEBUG')
-                                debug_filename = filename_noext + '_debug.wav'
+                                debug_filename = folder + '_' + filename_noext
                                 os.makedirs(debug_dest, exist_ok=True)
-                                shutil.copy(wave_filename, os.path.join(debug_dest, debug_filename))
-                                shutil.copy(path, debug_dest)
+                                shutil.copy(wave_filename, os.path.join(debug_dest, debug_filename + '_debug.wav'))
+                                shutil.copy(path, os.path.join(debug_dest, debug_filename + '.wav'))
                                 logging.debug('Copied original and debug file to %s', debug_dest)
                             os.remove(wave_filename)
-                            if convert:
-                                tfm = sox.Transformer()
-                                tfm.build(path, wave_filename)
-                            else:
-                                shutil.copy(path, wave_filename)
+                            if recover:
+                                if convert:
+                                    tfm = sox.Transformer()
+                                    tfm.build(path, wave_filename)
+                                else:
+                                    shutil.copy(path, wave_filename)
 
                     shutil.copy(readme_path, os.path.join(dest_dir, 'README'))
 
