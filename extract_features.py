@@ -30,7 +30,7 @@ def get_features(block_size, engine, find_salient, nfft, sr, path):
         y = dsp.get_salient_region(y, sr, start=y_start, end=y_end, start_buffer=0.2, end_buffer=0.4)
     feats = engine.processAudio(y.reshape(1, -1))
 
-    result = {'filename': os.path.splitext(os.path.basename(path))[0]}
+    result = {'filename': os.path.basename(path)}
     for name, feat in feats.items():
         if feat.shape[1] == 1:
             result[name] = feat.mean()
@@ -71,10 +71,6 @@ def main():
         pool.join()
         df = pd.DataFrame(r)
         df.to_csv('yaafe.csv', index=False)
-        # for _ in tqdm.tqdm(pool.imap_unordered(get_feature_wrappers, data_paths), total=len(data_paths)):
-        #     pass
-        # pool.close()
-        # pool.join()
     else:
         for path in data_paths:
             result = get_features(block_size, engine, find_salient, nfft, sr, path)
