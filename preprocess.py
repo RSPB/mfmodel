@@ -7,13 +7,16 @@ import re
 import pathlib
 import logging
 import tqdm
+import numpy as np
+import aubio
 from functools import partial
 from multiprocessing import Pool
 from appconfig import setup_logging
 
 min_acceptable_filesize = 15000 # bytes
 recover = False
-test = True
+single_dir = True
+test = False
 
 def main():
     t0 = time.time()
@@ -22,7 +25,7 @@ def main():
 
     genders = {'male', 'female'}
     download_folder = '/home/tracek/Data/gender/Voxforge'
-    output_dir = '/home/tracek/Data/gender/raw_test/'
+    output_dir = '/home/tracek/Data/gender/raw/'
 
     if test:
         download_folder = '/home/tracek/Data/gender/test'
@@ -61,7 +64,10 @@ def process_data(download_folder, genders, output_dir, folder):
                 gender = cleanstr.lower()
                 if gender in genders:
                     convert = False
-                    dest_dir = os.path.join(output_dir, gender, folder)
+                    if single_dir:
+                        dest_dir = os.path.join(output_dir, gender)
+                    else:
+                        dest_dir = os.path.join(output_dir, gender, folder)
                     if os.path.isdir(os.path.join(source_dir, 'wav/')):
                         source = os.path.join(source_dir, 'wav/')
                     elif os.path.isdir(os.path.join(source_dir, 'flac/')):
@@ -70,10 +76,13 @@ def process_data(download_folder, genders, output_dir, folder):
                     else:
                         raise NotImplemented('Missing converter')
 
-                    os.makedirs(dest_dir)
+                    os.makedirs(dest_dir, exist_ok=True)
                     for path in glob.glob(source + '*'):
                         filename_noext = os.path.splitext(os.path.basename(path))[0]
-                        wave_filename = os.path.join(dest_dir, filename_noext + '.wav')
+                        if single_dir:
+                            wave_filename = os.path.join(dest_dir, folder + '_' + filename_noext + '.wav')
+                        else:
+                            wave_filename = os.path.join(dest_dir, filename_noext + '.wav')
                         tfm = sox.Transformer()
                         tfm.set_globals(dither=True, guard=True)
                         tfm.norm()
@@ -101,8 +110,10 @@ def process_data(download_folder, genders, output_dir, folder):
                                     tfm.build(path, wave_filename)
                                 else:
                                     shutil.copy(path, wave_filename)
-
-                    shutil.copy(readme_path, os.path.join(dest_dir, 'README'))
+                    if single_dir:
+                        shutil.copy(readme_path, os.path.join(dest_dir, folder + '_README'))
+                    else:
+                        shutil.copy(readme_path, os.path.join(dest_dir, 'README'))
 
 
 if __name__ == '__main__':

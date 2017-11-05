@@ -15,7 +15,7 @@ featurespecs = \
      'SpectralSlope: SpectralSlope blockSize={} stepSize={}',
      'SpectralRolloff: SpectralRolloff blockSize={} stepSize={}']
 
-def get_onsets(signal, sr, nfft, hop, onset_detector_type='hfc', onset_threshold=0.3):
+def get_onsets(signal, sr, nfft, hop, onset_detector_type, onset_threshold):
     onsets = []
 
     onset_detector = aubio.onset(onset_detector_type, nfft, hop, sr)
@@ -26,20 +26,27 @@ def get_onsets(signal, sr, nfft, hop, onset_detector_type='hfc', onset_threshold
     for frame in signal_windowed[:-1]:
         if onset_detector(frame):
             onsets.append(onset_detector.get_last())
-    return np.array(onsets[1:])
+    return np.array(onsets[1:]) # first onset is always at zero
 
-def get_salient_region(y, sr, nfft, hop, buffer=0.2, onset_detector_type='hfc', onset_threshold=0.3):
-    onsets_fw = get_onsets(y, sr, nfft, hop, onset_detector_type, onset_threshold)
-    onsets_bw = get_onsets(y[::-1], sr, nfft, hop, onset_detector_type, onset_threshold)
+
+def get_start_end_samples(y, sr, nfft, hop,  onset_detector_type='hfc', onset_threshold=0.1):
+    onsets_fw = get_onsets(y, sr, nfft, hop, onset_detector_type, onset_threshold) # forward pass
+    onsets_bw = get_onsets(y[::-1], sr, nfft, hop, onset_detector_type, onset_threshold) # backward pass
     onsets_bw_rev = (len(y) - np.array(onsets_bw)[::-1])
-    salient_start = max(0, onsets_fw[0] - int(buffer * sr))
-    salient_end = min(len(y), onsets_bw[-1] + int(buffer * sr))
+    return onsets_fw[0], onsets_bw_rev[-1]
+
+
+def get_salient_region(y, sr, start, end, start_buffer=0.0, end_buffer=0.0):
+    salient_start = max(0, start - int(start_buffer * sr))
+    salient_end = min(len(y), end + int(end_buffer * sr))
     return y[salient_start:salient_end]
+
 
 def main():
     setup_logging()
     path = '/home/tracek/Data/gender/test/ablackball-20121113-vvk/wav/a0333.wav'
 
+    find_salient = False
     sr = 16000
     block_size = 1024
     nfft = 512
@@ -51,9 +58,12 @@ def main():
 
     y, sr = librosa.load(path, sr=sr)
     y = librosa.util.normalize(y)
-    y = y.astype('float32')
-    y_sal = get_salient_region(y, sr, nfft=nfft, hop=nfft // 2, buffer=0.2)
-    print(len(y_sal) / sr)
+    if find_salient:
+        y_start, y_end = get_start_end_samples(y.astype('float32'), sr, nfft=nfft, hop=nfft // 2)
+        y = get_salient_region(y, sr, start=y_start, end=y_end, start_buffer=0.2, end_buffer=0.4)
+
+
+
 
 if __name__ == '__main__':
     main()
