@@ -5,6 +5,8 @@ Whose line is it anyway? Identify the gender from audio.
 
 The audio data have been downloaded from [Voxforge](http://www.repository.voxforge1.org/downloads/SpeechCorpus/Trunk/Audio/Main/16kHz_16bit/) with the [download.py] script. The latter takes as input the web address, target directory and number of parallel processes to run. Processes, not threads, as one of the actions is inflate the archive. At this stage we're not doing any preprocessing, we want data exactly as-is on the source.
 
+Size of the data at this stage: 14.7 GB.
+
 ## Preprocessing
 
 [preprocess.py] reads metadata and separates files into *male* and *female* folders. Here comes the first suprise - not all audio are [WAV](https://en.wikipedia.org/wiki/WAV)! Some files are stored as flac, meaning these need to be converted to WAV. Also, it is worth noting that majority of files contains relatively long regions of non-voice in the beginning and end; it can be environmental noise, white noise, electronic noise or all sorts of noises humans produce (squelching, tongue clicking etc.). For this reason we remove these so-called "silence" regions with [SOX: Sound eXchange, the Swiss Army knife of audio manipulation](http://sox.sourceforge.net/sox.html).
@@ -12,6 +14,10 @@ The audio data have been downloaded from [Voxforge](http://www.repository.voxfor
 The procedure involves putting safeguards against clipping (like audio normalisation) and then trimming "silence". It can happen that the process will eliminate all the signal; in this case we can either recover the signal or reject it.
 
 Further audio segmentation and its importance is discussed in [audio_descriptors_and_segmentation.ipynb](https://nbviewer.jupyter.org/github/rspb/mfmodel/blob/master/audio_descriptors_and_segmentation.ipynb) notebook.
+
+Trimming "silence" reduced the size to: 11.8 GB. Gender division is as follows:
+- Male: 78820 recordings, over 87 hours
+- Female: 15066 recordings, over 15 hours
 
 ## Data analysis
 Data analysis is covered in [data_analysis.ipynb](https://nbviewer.jupyter.org/github/rspb/mfmodel/blob/master/data_analysis.ipynb).
