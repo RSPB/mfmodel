@@ -7,8 +7,6 @@ import re
 import pathlib
 import logging
 import tqdm
-import numpy as np
-import aubio
 from functools import partial
 from multiprocessing import Pool
 from appconfig import setup_logging
@@ -24,12 +22,13 @@ def main():
     setup_logging()
 
     genders = {'male', 'female'}
-    download_folder = '/home/tracek/Data/gender/Voxforge'
-    output_dir = '/home/tracek/Data/gender/raw/'
 
     if test:
         download_folder = '/home/tracek/Data/gender/test'
         output_dir = '/home/tracek/Data/gender/raw_test/'
+    else:
+        download_folder = '/home/tracek/Data/gender/Voxforge'
+        output_dir = '/home/tracek/Data/gender/raw/'
 
     [pathlib.Path(os.path.join(output_dir, gender_dir)).mkdir(parents=True, exist_ok=True) for gender_dir in genders]
 
@@ -86,7 +85,6 @@ def process_data(download_folder, genders, output_dir, folder):
                         tfm = sox.Transformer()
                         tfm.set_globals(dither=True, guard=True)
                         tfm.norm()
-                        # tfm.lowpass(400)
                         tfm.silence(location=0, silence_threshold=0.5, min_silence_duration=0.3)
                         tfm.build(path, wave_filename)
 
