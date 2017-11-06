@@ -68,4 +68,4 @@ One of the most accomplished libraries with tree-based algorithms is [XGBoost](h
 
 In summary, somewhat surprisingly, turns out the approach with *audio descriptors* is winning. The model converges faster and delivers better results than one build on *acoustic parameters*. Combined, we obtain the [**ultimate model**](https://nbviewer.jupyter.org/github/rspb/mfmodel/blob/master/model_combined.ipynb).
 
-The [model_combined.ipynb]([https://nbviewer.jupyter.org/github/rspb/mfmodel/blob/master/model_combined.ipynb) provides also short discussion of results and errors.
+The [model_combined.ipynb](https://nbviewer.jupyter.org/github/rspb/mfmodel/blob/master/model_combined.ipynb) provides also short discussion of results and errors.
