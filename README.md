@@ -3,13 +3,13 @@ Whose line is it anyway? Identify the gender from audio.
 
 ## Data
 
-The audio data have been downloaded from [Voxforge](http://www.repository.voxforge1.org/downloads/SpeechCorpus/Trunk/Audio/Main/16kHz_16bit/) with the [download.py] script. The latter takes as input the web address, target directory and number of parallel processes to run. Processes, not threads, as one of the actions is inflate the archive. At this stage we're not doing any preprocessing, we want data exactly as-is on the source.
+The audio data have been downloaded from [Voxforge](http://www.repository.voxforge1.org/downloads/SpeechCorpus/Trunk/Audio/Main/16kHz_16bit/) with the [download.py](download.py) script. The latter takes as input the web address, target directory and number of parallel processes to run. Processes, not threads, as one of the actions is inflate the archive. At this stage we're not doing any preprocessing, we want data exactly as-is on the source.
 
 Size of the data at this stage: 14.7 GB.
 
 ## Preprocessing
 
-[preprocess.py] reads metadata and separates files into *male* and *female* folders. Here comes the first suprise - not all audio are [WAV](https://en.wikipedia.org/wiki/WAV)! Some files are stored as flac, meaning these need to be converted to WAV. Also, it is worth noting that majority of files contains relatively long regions of non-voice in the beginning and end; it can be environmental noise, white noise, electronic noise or all sorts of noises humans produce (squelching, tongue clicking etc.). For this reason we remove these so-called "silence" regions with [SOX: Sound eXchange, the Swiss Army knife of audio manipulation](http://sox.sourceforge.net/sox.html).
+[preprocess.py](preprocess.py) reads metadata and separates files into *male* and *female* folders. Here comes the first suprise - not all audio are [WAV](https://en.wikipedia.org/wiki/WAV)! Some files are stored as flac, meaning these need to be converted to WAV. Also, it is worth noting that majority of files contains relatively long regions of non-voice in the beginning and end; it can be environmental noise, white noise, electronic noise or all sorts of noises humans produce (squelching, tongue clicking etc.). For this reason we remove these so-called "silence" regions with [SOX: Sound eXchange, the Swiss Army knife of audio manipulation](http://sox.sourceforge.net/sox.html).
 
 The procedure involves putting safeguards against clipping (like audio normalisation) and then trimming "silence". It can happen that the process will eliminate all the signal; in this case we can either recover the signal or reject it.
 
@@ -68,7 +68,7 @@ Nature of the features points towards tree-based algorithms; after all, we expec
 
 ### Machine learning algorithm
 
-One of the most accomplished libraries with tree-based algorithms is [XGBoost](https://github.com/dmlc/xgboost) - very fast, parallel and effective implementation of [*boosted trees*](https://arxiv.org/abs/1603.02754). Decent hyperparameters were found with grid search: [model_gridsearch.py].
+One of the most accomplished libraries with tree-based algorithms is [XGBoost](https://github.com/dmlc/xgboost) - very fast, parallel and effective implementation of [*boosted trees*](https://arxiv.org/abs/1603.02754). Decent hyperparameters were found with grid search: [model_gridsearch.py](model_gridsearch.py).
 
 ### Results
 
