@@ -59,7 +59,7 @@ def get_features(block_size, find_salient, nfft, sr, path):
 
 def main():
     setup_logging()
-    data_dir = '/home/tracek/Data/gender/raw/female/'
+    data_dir = '/home/tracek/Data/gender/raw/male/'
     # data_dir = '/home/tracek/Data/gender/test/'
     data_paths = glob.glob(data_dir + '*.wav')
 

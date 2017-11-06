@@ -18,9 +18,10 @@ def main():
     num_parallel = 14
     equal_no_samples_in_each_class = False
     datapath = '/home/tracek/Data/gender/gender_warbler.csv'
+    datapath = '/home/tracek/Data/gender/gender_descriptors.csv'
 
     setup_logging()
-    data = pd.read_csv(datapath).drop(['centroid', 'filename'], axis=1)  # centroid corresponds to meanfreq
+    data = pd.read_csv(datapath).drop(['filename'], axis=1)  # centroid corresponds to meanfreq
     male_df_len = len(data[data['label'] == 0])
     female_df_len = len(data[data['label'] == 1])
 
