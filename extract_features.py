@@ -21,7 +21,16 @@ featurespecs = \
      'SpectralVariation: SpectralVariation blockSize={} stepSize={}']
 
 
-def get_features(block_size, engine, find_salient, nfft, sr, path):
+def get_features(block_size, find_salient, nfft, sr, path):
+
+    feature_plan = yaafelib.FeaturePlan(sample_rate=sr, normalize=True)
+    for featurespec in featurespecs:
+        feature = featurespec.format(block_size, block_size // 2)
+        feature_plan.addFeature(feature)
+
+    engine = yaafelib.Engine()
+    engine.load(feature_plan.getDataFlow())
+
     y, sr = librosa.load(path, sr=sr)
     y = librosa.util.normalize(y)
     if find_salient:
@@ -37,18 +46,25 @@ def get_features(block_size, engine, find_salient, nfft, sr, path):
             for i in range(feat.shape[1]):
                 result[name + str(i)] = feat[:, i].mean()
     pitches = dsp.get_pitch(y, sr, block_size, block_size // 4, lowpass=300)
-    pitches = pitches[pitches > pitches.mean()]
-    result['pitch'] = pitches.mean()
+    if pitches.size > 0:
+        pitches_above_mean = pitches[pitches > pitches.mean()]
+        if pitches_above_mean.size > 0:
+            result['pitch'] = pitches_above_mean.mean()
+        else:
+            result['pitch'] = pitches.mean()
+    else:
+        result['pitch'] = 0.0
     return result
 
 
 def main():
     setup_logging()
-    data_dir = '/home/tracek/Data/gender/test/'
+    data_dir = '/home/tracek/Data/gender/raw/female/'
+    # data_dir = '/home/tracek/Data/gender/test/'
     data_paths = glob.glob(data_dir + '*.wav')
 
-    num_parallel = 6
-    find_salient = False
+    num_parallel = 15
+    find_salient = True
     sr = 16000
     block_size = 1024
     nfft = 512
@@ -59,20 +75,18 @@ def main():
         assert feature_plan.addFeature(feature), 'Failed to load %s feature' % feature
         logging.info('Feature %s loaded', feature)
 
-    engine = yaafelib.Engine()
-    engine.load(feature_plan.getDataFlow())
-
     if num_parallel > 1:
-        get_feature_wrappers = partial(get_features, block_size, engine, find_salient, nfft, sr)
+        get_feature_wrappers = partial(get_features, block_size, find_salient, nfft, sr)
         pool = Pool(num_parallel)
         r = pool.map(get_feature_wrappers, data_paths)
         pool.close()
         pool.join()
-        df = pd.DataFrame(r)
-        df.to_csv('yaafe.csv', index=False)
     else:
         for path in data_paths:
-            result = get_features(block_size, engine, find_salient, nfft, sr, path)
+            r = get_features(block_size, find_salient, nfft, sr, path)
+
+    df = pd.DataFrame(r)
+    df.to_csv('yaafe.csv', index=False)
 
 
 if __name__ == '__main__':

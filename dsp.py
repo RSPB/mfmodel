@@ -45,7 +45,15 @@ def get_start_end_samples(y, sr, nfft, hop,  onset_detector_type='hfc', onset_th
     onsets_fw = get_onsets(y, sr, nfft, hop, onset_detector_type, onset_threshold) # forward pass
     onsets_bw = get_onsets(y[::-1], sr, nfft, hop, onset_detector_type, onset_threshold) # backward pass
     onsets_bw_rev = (len(y) - np.array(onsets_bw)[::-1])
-    return onsets_fw[0], onsets_bw_rev[-1]
+    if onsets_fw.size == 0:
+        start = 0
+    else:
+        start = onsets_fw[0]
+    if onsets_bw_rev.size == 0:
+        end = len(y) - 1
+    else:
+        end = onsets_bw_rev[-1]
+    return start, end
 
 
 def get_salient_region(y, sr, start, end, start_buffer=0.0, end_buffer=0.0):
@@ -54,24 +62,33 @@ def get_salient_region(y, sr, start, end, start_buffer=0.0, end_buffer=0.0):
     return y[salient_start:salient_end]
 
 
+def _find_pitches(win, pitch_o, tolerance):
+    pitches = []
+    for frame in win[:-1]:
+        pitch = pitch_o(frame)[0]
+        confidence = pitch_o.get_confidence()
+        if confidence > tolerance:
+            pitches.append(pitch)
+    return pitches
+
+
 def get_pitch(signal, sr, block_size, hop, lowpass=None, tolerance = 0.8):
     if lowpass:
         signal = lowpass_filter(signal, sr, lowpass, 6)
     pitch_o = aubio.pitch("yin", block_size, hop, sr)
     pitch_o.set_unit('Hz')
     pitch_o.set_tolerance(tolerance)
-    y_in = signal.astype('float32')
-    y_win = np.array_split(y_in, np.arange(hop, len(y_in), hop))
+    signal = signal.astype('float32')
+    signal_win = np.array_split(signal, np.arange(hop, len(signal), hop))
 
-    pitches = []
-
-    for frame in y_win[:-1]:
-        pitch = pitch_o(frame)[0]
-        confidence = pitch_o.get_confidence()
-        if confidence > tolerance:
-            pitches.append(pitch)
+    pitches = _find_pitches(signal_win, pitch_o, tolerance)
 
     if not pitches:
         logging.warning('No pitches detected for tolerance %f', tolerance)
+        pitches = _find_pitches(signal_win, pitch_o, tolerance / 2)
+    if not pitches:
+        pitches = _find_pitches(signal_win, pitch_o, tolerance / 4)
 
     return np.array(pitches)
+
+
