@@ -61,8 +61,8 @@ Description [here](http://yaafe.sourceforge.net/features.html).
 
 ## Model
 Two models were built using:
-- *acoustic parameters*: [notebook](https://nbviewer.jupyter.org/github/rspb/mfmodel/blob/master/model_warbler.ipynb)
-- *audio descriptors*: [notebook](https://nbviewer.jupyter.org/github/rspb/mfmodel/blob/master/model_descriptors.ipynb)
+- *acoustic parameters*: [notebook](https://nbviewer.jupyter.org/github/rspb/mfmodel/blob/master/model_warbler.ipynb), [csv with data](https://drive.google.com/open?id=1qZZTBPY6Ap0i5qr_e9xQbRNts7XMivs7).
+- *audio descriptors*: [notebook](https://nbviewer.jupyter.org/github/rspb/mfmodel/blob/master/model_descriptors.ipynb), [csv with data](https://drive.google.com/open?id=1xwKHHrOgDj_0269OkYFpmDBNYg4rbxKq).
 
 Nature of the features points towards tree-based algorithms; after all, we expect that it is a matter of e.g. checking if fundamental frequency is above X and feature *Boo* is withing certain bounds, than it's a *male* voice.
 
