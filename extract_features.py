@@ -3,7 +3,6 @@ import logging
 import yaafelib
 import librosa
 import dsp
-import tqdm
 import glob
 import pandas as pd
 from multiprocessing import Pool
@@ -30,7 +29,7 @@ def get_features(block_size, engine, find_salient, nfft, sr, path):
         y = dsp.get_salient_region(y, sr, start=y_start, end=y_end, start_buffer=0.2, end_buffer=0.4)
     feats = engine.processAudio(y.reshape(1, -1))
 
-    result = {'filename': os.path.basename(path)}
+    result = {'filename': os.path.basename(os.path.dirname(path)) + '_' + os.path.basename(path)}
     for name, feat in feats.items():
         if feat.shape[1] == 1:
             result[name] = feat.mean()
@@ -74,7 +73,6 @@ def main():
     else:
         for path in data_paths:
             result = get_features(block_size, engine, find_salient, nfft, sr, path)
-            print(result)
 
 
 if __name__ == '__main__':
