@@ -24,6 +24,7 @@ def main():
 
     print('Model accuracy: {:.2f}%'.format(results['accuracy'] * 100))
     print(results['classification_report'])
+    model.save_model(os.path.join(args.dest, 'model.xgb'))
 
 
 def get_data(source, target, njobs):
