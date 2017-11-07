@@ -21,8 +21,6 @@ def main():
     num_parallel = 14
     setup_logging()
 
-    genders = {'male', 'female'}
-
     if test:
         download_folder = '/home/tracek/Data/gender/test'
         output_dir = '/home/tracek/Data/gender/raw_test/'
@@ -30,12 +28,20 @@ def main():
         download_folder = '/home/tracek/Data/gender/Voxforge'
         output_dir = '/home/tracek/Data/gender/raw/'
 
-    [pathlib.Path(os.path.join(output_dir, gender_dir)).mkdir(parents=True, exist_ok=True) for gender_dir in genders]
+    preprocess(download_folder, output_dir, num_parallel)
+    print('Run time: {:.2f} s'.format(time.time() - t0))
 
+
+def preprocess(download_folder, output_dir, njobs):
+    if os.path.isdir(output_dir):
+        logging.info('')
+
+    genders = {'male', 'female'}
+    [pathlib.Path(os.path.join(output_dir, gender_dir)).mkdir(parents=True, exist_ok=True) for gender_dir in genders]
     dirs_for_processing = os.listdir(path=download_folder)
-    if num_parallel > 1:
+    if njobs > 1:
         processor_wrapper = partial(process_data, download_folder, genders, output_dir)
-        pool = Pool(num_parallel)
+        pool = Pool(njobs)
         for _ in tqdm.tqdm(pool.imap_unordered(processor_wrapper, dirs_for_processing), total=len(dirs_for_processing)):
             pass
         pool.close()
@@ -43,16 +49,15 @@ def main():
     else:
         for folder in dirs_for_processing:
             process_data(download_folder, genders, output_dir, folder)
-    print('Run time: {:.2f} s'.format(time.time() - t0))
 
 
 def process_data(download_folder, genders, output_dir, folder):
     source_dir = os.path.join(download_folder, folder)
-    if os.path.isfile(os.path.join(source_dir, 'etc/README')):
-        readme_path = os.path.join(source_dir, 'etc/README')
-    elif os.path.isfile(os.path.join(source_dir, 'etc/readme')):
-        readme_path = os.path.join(source_dir, 'etc/readme')
-    else:
+    readme_variations = ['README', 'readme', 'AREADME', 'Read Me.txt', 'ReadMe.txt', 'Readme', 'Readme.txt']
+    readme_path_variations = [os.path.join(source_dir, 'etc/', name) for name in readme_variations]
+    try:
+        readme_path = next(path for path in readme_path_variations if os.path.isfile(path))
+    except StopIteration:
         raise ValueError('No readme in %s' % source_dir)
 
     with open(readme_path, 'r') as readme:
@@ -62,6 +67,8 @@ def process_data(download_folder, genders, output_dir, folder):
                 cleanstr = re.sub('\W+', '', match.group(1))
                 gender = cleanstr.lower()
                 if gender in genders:
+                    if os.path.exists(os.path.join(output_dir, gender, folder + '_README')):
+                        return
                     convert = False
                     if single_dir:
                         dest_dir = os.path.join(output_dir, gender)

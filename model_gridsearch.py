@@ -7,7 +7,7 @@ from appconfig import setup_logging
 from sklearn import metrics
 
 
-param_grid = {'max_depth': [13, 20], 'n_estimators': [200, 500, 1000], 'gamma': [0, 0.1]}
+param_grid = {'max_depth': [4, 6, 9, 13, 20], 'n_estimators': [500, 1000, 200], 'gamma': [0, 0.1]}
 
 
 def main():

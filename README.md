@@ -1,9 +1,15 @@
 # Gender recognition from voice
 Whose line is it anyway? Identify the gender from audio.
 
+## Approach
+
+Parallel everywhere! Core not used in a core lost,
+
 ## Data
 
 The audio data have been downloaded from [Voxforge](http://www.repository.voxforge1.org/downloads/SpeechCorpus/Trunk/Audio/Main/16kHz_16bit/) with the [download.py](download.py) script. The latter takes as input the web address, target directory and number of parallel processes to run. Processes, not threads, as one of the actions is inflate the archive. At this stage we're not doing any preprocessing, we want data exactly as-is on the source.
+
+One can be tempted to increase number of download streams, but it's better to keep it limited: it can put much stress on the server, which in turn will start rejecting our connection attempts. In the time of testing, 4 seemed like a good number; it still makes the host sometimes unhappy, hence retries on failures.
 
 Size of the data at this stage: 14.7 GB.
 
@@ -77,3 +83,4 @@ One of the most accomplished libraries with tree-based algorithms is [XGBoost](h
 In summary, somewhat surprisingly, turns out the approach with *audio descriptors* is winning. The model converges faster and delivers better results than one build on *acoustic parameters*. Combined, we obtain the [**ultimate model**](https://nbviewer.jupyter.org/github/rspb/mfmodel/blob/master/model_combined.ipynb).
 
 The [model_combined.ipynb](https://nbviewer.jupyter.org/github/rspb/mfmodel/blob/master/model_combined.ipynb) provides also short discussion of results and errors.
+

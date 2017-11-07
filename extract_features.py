@@ -5,7 +5,7 @@ import librosa
 import dsp
 import glob
 import pandas as pd
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 from appconfig import setup_logging
 from functools import partial
 
@@ -57,6 +57,36 @@ def get_features(block_size, find_salient, nfft, sr, path):
     return result
 
 
+def get_audio_descriptors(source, sr, nfft=512, block_size=1024, find_salient=True, njobs=cpu_count()):
+    audio_descriptors_path = os.path.join(source, 'audio_descriptors.csv')
+    if os.path.exists(audio_descriptors_path):
+        logging.info('Loaded existing audio descriptors from %s', audio_descriptors_path)
+        df = pd.read_csv(audio_descriptors_path)
+    else:
+        male_paths = glob.glob(os.path.join(source, 'male/') + '*.wav')
+        female_paths = glob.glob(os.path.join(source, 'female/') + '*.wav')
+        if njobs > 1:
+            get_feature_wrappers = partial(get_features, block_size, find_salient, nfft, sr)
+            pool = Pool(njobs)
+            results_male = pool.map(get_feature_wrappers, male_paths)
+            results_female = pool.map(get_feature_wrappers, female_paths)
+            pool.close()
+            pool.join()
+        else:
+            results_male = [get_features(block_size, find_salient, nfft, sr, path) for path in male_paths]
+            results_female = [get_features(block_size, find_salient, nfft, sr, path) for path in female_paths]
+
+        for rmale in results_male:
+            rmale['label'] = 0
+        for rfemale in results_female:
+            rfemale['label'] = 1
+
+        df = pd.DataFrame(results_male + results_female)
+        df.to_csv(os.path.join(source, 'audio_descriptors.csv'), index=False)
+
+    return df
+
+
 def main():
     setup_logging()
     data_dir = '/home/tracek/Data/gender/raw/male/'
@@ -69,11 +99,6 @@ def main():
     block_size = 1024
     nfft = 512
 
-    feature_plan = yaafelib.FeaturePlan(sample_rate=sr, normalize=True)
-    for featurespec in featurespecs:
-        feature = featurespec.format(block_size, block_size // 2)
-        assert feature_plan.addFeature(feature), 'Failed to load %s feature' % feature
-        logging.info('Feature %s loaded', feature)
 
     if num_parallel > 1:
         get_feature_wrappers = partial(get_features, block_size, find_salient, nfft, sr)
