@@ -121,5 +121,34 @@ def process_data(download_folder, genders, output_dir, folder):
                         shutil.copy(readme_path, os.path.join(dest_dir, 'README'))
 
 
+def silence_and_norm(input, output, threshold):
+    tfm = sox.Transformer()
+    tfm.set_globals(dither=True, guard=True)
+    tfm.norm()
+    tfm.silence(location=0, silence_threshold=threshold, min_silence_duration=0.3)
+    tfm.build(input, output)
+
+    original_file_size = os.stat(input).st_size
+    new_file_size = os.stat(output).st_size
+    logging.info('Old file size: %d kB. New file size: %d kB.', original_file_size, new_file_size)
+    success = new_file_size > min_acceptable_filesize < original_file_size
+    if not success:
+        os.remove(output)
+    return success
+
+
+def trim_and_convert(filepath):
+    filename_noext = os.path.splitext(os.path.basename(filepath))[0]
+    tmpfile = filename_noext + '_trimmed.wav'
+    success = silence_and_norm(input=filepath, output=tmpfile, threshold=0.5)
+    if not success:
+        success = silence_and_norm(input=filepath, output=tmpfile, threshold=0.1)
+        logging.warning('Removing silence severely shortened signal')
+    if not success:
+        tfm = sox.Transformer()
+        logging.warning('Recovery failed')
+        tfm.build(filepath, tmpfile)
+    return tmpfile
+
 if __name__ == '__main__':
     main()
