@@ -57,6 +57,7 @@ def train(dtrain, dval, params=None, boost_rounds=500, early_stopping_rounds=5, 
     return model
 
 def predict(features, model_path):
+    prediction = None
     booster = xg.Booster()
     booster.load_model(model_path)
 
@@ -73,6 +74,9 @@ def predict(features, model_path):
         features = xg.DMatrix(features)
     if isinstance(features, xg.DMatrix):
         prediction = booster.predict(features)
+
+    if not prediction:
+        raise ValueError('Prediction failed with features {}'.format(features))
     return prediction
 
 

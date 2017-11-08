@@ -60,7 +60,12 @@ def predict(args):
     logging.info('Processing: %s', args.path)
     tmpfilepath = trim_and_convert(args.path)
     features = get_features(block_size=1024, find_salient=True, nfft=512, sr=16000, path=tmpfilepath)
-    print(model.predict(features=features, model_path='model.xgb'))
+    os.remove(tmpfilepath)
+    prediction = model.predict(features=features, model_path='model.xgb')
+    gender = 'Female' if prediction > 0.5 else 'Male'
+    if gender == 'Male':
+        prediction = 1 - prediction
+    print('Gender: {} with probability {:.2f}%'.format(gender, prediction * 100))
 
 
 if __name__ == '__main__':
