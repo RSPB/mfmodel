@@ -135,7 +135,7 @@ The [model_combined.ipynb](http://nbviewer.jupyter.org/github/tracek/mfmodel/blo
 
 ### Observation
 
-The model interprets silence as "male". Curious!
+The model interprets silence as "male". Curious! *Note: the model makes a binary classification, meaning it always needs to make some choice. Sound of a car engine or pig grunting will be also put in one of these categories (as a matter of fact the mentioned [pig](http://www.wavsource.com/snds_2017-09-17_1751672946049674/animals/pig3.wav) scored 99% as a male)*
 
 ### Caveats
 
