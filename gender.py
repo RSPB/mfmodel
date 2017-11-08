@@ -1,8 +1,9 @@
+#!/usr/bin/env python
+
 import os
 import argparse
 import logging
-from multiprocessing import Pool, cpu_count
-from functools import partial
+from multiprocessing import cpu_count
 
 import model
 from appconfig import setup_logging
