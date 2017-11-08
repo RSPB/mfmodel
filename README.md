@@ -11,11 +11,8 @@ Gender Recognition From Audio
 positional arguments:
   {train,predict}
     train          Run complete training on the web resources and evaluate the
-                   model
-    predict        Make a prediction on a single audio file
-
-optional arguments:
-  -h, --help       show this help message and exit
+                   model.
+    predict        Make a prediction on a single audio file.
 ```
 ### Training
 ```
@@ -25,13 +22,14 @@ usage: gender.py train [-h] [-d DEST] [-s SOURCE]
 
 optional arguments:
   -h, --help            show this help message and exit
-  -d DEST, --dest DEST  Path to the target directory.
+  -d DEST, --dest DEST  Path to the target directory. Default: script
+                        directory.
   -s SOURCE, --source SOURCE
-                        Path to the web repository
+                        Path to the web repository. Default: Voxforge.
   --download_jobs DOWNLOAD_JOBS
-                        Number of download jobs
+                        Number of download jobs. Default: 4.
   --compute_jobs COMPUTE_JOBS
-                        Number of compute jobs
+                        Number of compute jobs. Default: number of cores.
 ```
 ### Prediction
 ```
