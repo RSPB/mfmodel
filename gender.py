@@ -32,21 +32,24 @@ def train(args):
 
 
 def parse_args():
-    default_target = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data')
+    working_directory = os.path.dirname(os.path.realpath(__file__))
+    default_target = os.path.join(working_directory, 'data')
     default_source = 'http://www.repository.voxforge1.org/downloads/SpeechCorpus/Trunk/Audio/Main/16kHz_16bit'
 
     parser = argparse.ArgumentParser(description='Gender Recognition From Audio')
     subparsers = parser.add_subparsers()
 
-    parser_train = subparsers.add_parser('train', help='Make a prediction on a single file')
-    parser_train.add_argument('-d', '--dest', help='Path to the target directory.', default=default_target)
-    parser_train.add_argument('-s', '--source', help='Path to the web repository', default=default_source)
-    parser_train.add_argument('--download_jobs', help='Number of download jobs', default=4, type=int)
-    parser_train.add_argument('--compute_jobs', help='Number of compute jobs', default=cpu_count(), type=int)
+    parser_train = subparsers.add_parser('train', help='Run complete training on the web resources and evaluate the model.')
+    parser_train.add_argument('-d', '--dest', help='Path to the target directory. Default: script directory.', default=default_target)
+    parser_train.add_argument('-s', '--source', help='Path to the web repository. Default: Voxforge.', default=default_source)
+    parser_train.add_argument('--download_jobs', help='Number of download jobs. Default: 4.', default=4, type=int)
+    parser_train.add_argument('--compute_jobs', help='Number of compute jobs. Default: number of cores.', default=cpu_count(), type=int)
     parser_train.set_defaults(func=train)
 
-    parser_predict = subparsers.add_parser('predict', help='Make a prediction on a single file')
-    parser_predict.add_argument('path', help='Path to the file.')
+    parser_predict = subparsers.add_parser('predict', help='Make a prediction on a single audio file.')
+    parser_predict.add_argument('path', help='Path to the audio file.')
+    parser_predict.add_argument('-m', '--model', help='Path to the model. Default: model.xgb in script directory.',
+                                default=os.path.join(working_directory, 'model.xgb'))
     parser_predict.set_defaults(func=predict)
     args = parser.parse_args()
 
@@ -61,7 +64,7 @@ def predict(args):
     tmpfilepath = trim_and_convert(args.path)
     features = get_features(block_size=1024, find_salient=True, nfft=512, sr=16000, path=tmpfilepath)
     os.remove(tmpfilepath)
-    prediction = model.predict(features=features, model_path='model.xgb')
+    prediction = model.predict(features=features, model_path=args.model)
     gender = 'Female' if prediction > 0.5 else 'Male'
     if gender == 'Male':
         prediction = 1 - prediction

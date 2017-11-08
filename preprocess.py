@@ -93,6 +93,7 @@ def process_data(download_folder, genders, output_dir, folder):
                         tfm.set_globals(dither=True, guard=True)
                         tfm.norm()
                         tfm.silence(location=0, silence_threshold=0.5, min_silence_duration=0.3)
+                        tfm.set_output_format(rate=16000)
                         tfm.build(path, wave_filename)
 
                         original_file_size = os.stat(path).st_size

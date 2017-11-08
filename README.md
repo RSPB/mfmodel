@@ -1,9 +1,60 @@
 # Gender recognition from voice
 Whose line is it anyway? Identify the gender from audio.
 
-## Approach
+## Usage
 
-Parallel everywhere! Core not used in a core lost,
+```
+usage: gender.py [-h] {train,predict} ...
+
+Gender Recognition From Audio
+
+positional arguments:
+  {train,predict}
+    train          Run complete training on the web resources and evaluate the
+                   model
+    predict        Make a prediction on a single audio file
+
+optional arguments:
+  -h, --help       show this help message and exit
+```
+### Training
+```
+usage: gender.py train [-h] [-d DEST] [-s SOURCE]
+                       [--download_jobs DOWNLOAD_JOBS]
+                       [--compute_jobs COMPUTE_JOBS]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -d DEST, --dest DEST  Path to the target directory.
+  -s SOURCE, --source SOURCE
+                        Path to the web repository
+  --download_jobs DOWNLOAD_JOBS
+                        Number of download jobs
+  --compute_jobs COMPUTE_JOBS
+                        Number of compute jobs
+```
+### Prediction
+```
+usage: gender.py predict [-h] [-m MODEL] path
+
+positional arguments:
+  path                  Path to the audio file.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -m MODEL, --model MODEL
+                        Path to the model. Default: model.xgb in script
+                        directory.
+```
+
+### Examples
+`python gender.py` : print help
+
+`python gender.py train` : download audio files from Voxforge, trim silence, sort into male and female classes, compute audio descriptors, build, evaluate and save the model
+
+## Installation
+
+Simply clone the repo and install modules listed in [requirements.txt](requirements.txt). Next to that, you need also to fetch Yaafe, sox and xgboost. Python 3 is recommended. Python 2 will work after tiny adjustments (that can be made upon request).
 
 ## Data
 
@@ -84,3 +135,10 @@ In summary, somewhat surprisingly, turns out the approach with *audio descriptor
 
 The [model_combined.ipynb](http://nbviewer.jupyter.org/github/tracek/mfmodel/blob/master/analysis/model_combined.ipynb) provides also short discussion of results and errors.
 
+### Observation
+
+The model interprets silence as "male". Curious!
+
+### Caveats
+
+The results won't be as nice in the real world as descried here. My first and foremost mistake was to randomly divide recordings, only applying stratification. Issue? Say Alice has 20 recordings. On average, majority of these go into training, some into validation and test sets. The model does not necessarily learn how woman sounds, but memorised how Alice sounds. Needs further investigation.
