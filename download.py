@@ -31,6 +31,29 @@ def get_links(url):
     return links
 
 
+def get_data(source, target, njobs):
+    os.makedirs(target, exist_ok=True)
+    links = get_links(source)
+    already_downloaded = os.listdir(target)
+    archives_all = [os.path.splitext(os.path.basename(link))[0] for link in links]
+    folders_left_to_download = set(archives_all) - set(already_downloaded)
+    links_left_to_download = [source + '/' + folder + '.wav' for folder in folders_left_to_download]
+    logging.info('%d archives left do download.', len(links_left_to_download))
+
+    if len(links_left_to_download) == 0:
+        logging.info('Nothing left to do, exiting.')
+    else:
+        if njobs > 1:
+            download_wrapper = partial(download_and_extract, target)
+            pool = Pool(njobs)
+            pool.map(download_wrapper, links)
+            pool.close()
+            pool.join()
+        else:
+            for link in links:
+                download_and_extract(target=target, url=link)
+
+
 def main():
     simulate = True
     setup_logging()

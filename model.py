@@ -1,5 +1,6 @@
 import time
 import configobj
+import logging
 import xgboost as xg
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -25,11 +26,19 @@ def split_data(X, y, val_fraction, test_fraction, seed=42):
         return dtrain, dval
 
 
-def train(dtrain, dval, params=None, boost_rounds=500, early_stopping_rounds=5):
+def load_params(config_path, config_specs_path):
+    try:
+        config = configobj.ConfigObj(config_path, config_specs_path)
+    except:
+        logging.exception('Unable to load xgboost parameters from %s (type specs in %s)', config_path, config_specs_path)
+        raise
+    assert config.validate(Validator()), '{} contains errors'.format(config_path)
+    params = config['xgboost']
+    return params
+
+def train(dtrain, dval, params=None, boost_rounds=500, early_stopping_rounds=5, saveto='model.xgb'):
     if not params:
-        config = configobj.ConfigObj('xgboost_params.ini', configspec='xgboost_params_specs.ini')
-        assert config.validate(Validator()), 'xgboost_params.ini contains error'
-        params = config['xgboost']
+        params = load_params(config_path='xgboost_params.ini', config_specs_path='xgboost_params_specs.ini')
 
     evallist = [(dval, 'eval'), (dtrain, 'train')]
     model = xg.train(params=params,
@@ -37,7 +46,14 @@ def train(dtrain, dval, params=None, boost_rounds=500, early_stopping_rounds=5):
                      num_boost_round=boost_rounds,
                      evals=evallist,
                      early_stopping_rounds=early_stopping_rounds)
+    if saveto:
+        model.save_model(saveto)
     return model
+
+def predict(features, model_path):
+    booster = xg.Booster()
+    booster.load_model(model_path)
+    prediction = booster.predict(features)
 
 
 def _remove_spaces_in_feature_names(X):
