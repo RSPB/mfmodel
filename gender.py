@@ -48,7 +48,10 @@ def parse_args():
     parser_predict.set_defaults(func=predict)
     args = parser.parse_args()
 
-    args.func(args)
+    if 'func' in args:
+        args.func(args)
+    else:
+        parser.print_help()
 
 
 def predict(args):
