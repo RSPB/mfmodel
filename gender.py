@@ -3,6 +3,7 @@
 import os
 import argparse
 import logging
+import pandas as pd
 from multiprocessing import cpu_count
 
 import model
@@ -59,7 +60,7 @@ def predict(args):
     logging.info('Processing: %s', args.path)
     tmpfilepath = trim_and_convert(args.path)
     features = get_features(block_size=1024, find_salient=True, nfft=512, sr=16000, path=tmpfilepath)
-
+    print(model.predict(features=features, model_path='model.xgb'))
 
 
 if __name__ == '__main__':

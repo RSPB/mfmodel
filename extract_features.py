@@ -38,7 +38,10 @@ def get_features(block_size, find_salient, nfft, sr, path):
         y = dsp.get_salient_region(y, sr, start=y_start, end=y_end, start_buffer=0.2, end_buffer=0.4)
     feats = engine.processAudio(y.reshape(1, -1))
 
-    result = {'filename': os.path.basename(os.path.dirname(path)) + '_' + os.path.basename(path)}
+    parentdir = os.path.basename(os.path.dirname(path))
+    filename = os.path.basename(path)
+    filename_extended = parentdir + '_' + filename if parentdir else filename
+    result = {'filename': filename_extended}
     for name, feat in feats.items():
         if feat.shape[1] == 1:
             result[name] = feat.mean()

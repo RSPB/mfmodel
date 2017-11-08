@@ -1,6 +1,8 @@
 import time
 import configobj
 import logging
+import pandas as pd
+import numpy as np
 import xgboost as xg
 from sklearn import metrics
 from validate import Validator
@@ -57,7 +59,21 @@ def train(dtrain, dval, params=None, boost_rounds=500, early_stopping_rounds=5, 
 def predict(features, model_path):
     booster = xg.Booster()
     booster.load_model(model_path)
-    prediction = booster.predict(features)
+
+    if isinstance(features, dict):
+        filename = features.pop('filename')
+        features_df = pd.DataFrame(features, index=[0])
+        dfeatures = xg.DMatrix(features_df)
+        prediction = booster.predict(dfeatures)
+        prediction = np.asscalar(prediction)
+    if isinstance(features, list):
+        features = pd.DataFrame(features)
+    if isinstance(features, pd.DataFrame):
+        features = features.drop('filename', index=0) if 'filename' in features else features
+        features = xg.DMatrix(features)
+    if isinstance(features, xg.DMatrix):
+        prediction = booster.predict(features)
+    return prediction
 
 
 def _remove_spaces_in_feature_names(X):
