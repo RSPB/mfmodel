@@ -4,11 +4,11 @@ import logging
 from multiprocessing import Pool, cpu_count
 from functools import partial
 
+import model
 from appconfig import setup_logging
 from download import get_data
 from preprocess import preprocess, trim_and_convert
 from extract_features import get_audio_descriptors, get_features
-from model import train, split_data, evaluate
 
 
 def main():
@@ -21,9 +21,9 @@ def train(args):
     preprocessed_data_path = os.path.join(args.dest, 'preprocessed/')
     preprocess(download_folder=os.path.join(args.dest, 'raw/'), output_dir=preprocessed_data_path, njobs=args.compute_jobs)
     audio_descriptors = get_audio_descriptors(source=preprocessed_data_path, sr=16000).drop(['filename'], axis=1)
-    dtrain, dval, dtest = split_data(audio_descriptors, 'label', val_fraction=0.2, test_fraction=0.1)
-    model = train(dtrain, dval, saveto='model.xgb')
-    results = evaluate(model, dtest, figure_name='report.png')
+    dtrain, dval, dtest = model.split_data(audio_descriptors, 'label', val_fraction=0.2, test_fraction=0.1)
+    mymodel = model.train(dtrain, dval, saveto='model.xgb')
+    results = model.evaluate(mymodel, dtest, figure_name='report.png')
 
     print('Model accuracy: {:.2f}%'.format(results['accuracy'] * 100))
     print(results['classification_report'])

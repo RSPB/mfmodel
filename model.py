@@ -36,6 +36,7 @@ def load_params(config_path, config_specs_path):
     params = config['xgboost']
     return params
 
+
 def train(dtrain, dval, params=None, boost_rounds=500, early_stopping_rounds=5, saveto='model.xgb'):
     if not params:
         params = load_params(config_path='xgboost_params.ini', config_specs_path='xgboost_params_specs.ini')
