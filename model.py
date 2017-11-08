@@ -2,11 +2,14 @@ import time
 import configobj
 import logging
 import xgboost as xg
-import matplotlib.pyplot as plt
-import seaborn as sns
 from sklearn import metrics
 from validate import Validator
 from sklearn.model_selection import train_test_split
+
+import matplotlib
+matplotlib.use('Agg') # Force matplotlib to not use any Xwindows backend.
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 
 def split_data(X, y, val_fraction, test_fraction, seed=42):
