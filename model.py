@@ -28,7 +28,7 @@ def split_data(X, y, val_fraction, test_fraction, seed=42):
 
 def load_params(config_path, config_specs_path):
     try:
-        config = configobj.ConfigObj(config_path, config_specs_path)
+        config = configobj.ConfigObj(config_path, configspec=config_specs_path)
     except:
         logging.exception('Unable to load xgboost parameters from %s (type specs in %s)', config_path, config_specs_path)
         raise
