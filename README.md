@@ -48,7 +48,7 @@ optional arguments:
 ### Examples
 `python gender.py` : print help
 
-`python gender.py train` : download audio files from Voxforge, trim silence, sort into male and female classes, compute audio descriptors, build, evaluate and save the model
+`python gender.py train` : download audio files from Voxforge, trim silence, sort into male and female classes, compute audio descriptors, build, evaluate and save the model.
 
 ## Installation
 
@@ -139,4 +139,4 @@ The model interprets silence as "male". Curious!
 
 ### Caveats
 
-The results won't be as nice in the real world as descried here. My first and foremost mistake was to randomly divide recordings, only applying stratification. Issue? Say Alice has 20 recordings. On average, majority of these go into training, some into validation and test sets. The model does not necessarily learn how woman sounds, but memorised how Alice sounds. Needs further investigation.
+The results won't be as nice in the real world as descried here. My first and foremost mistake was to randomly divide recordings, only applying stratification. Issue? Say Alice has 20 recordings. On average, majority of these go into training, some into validation and test sets. The model does not necessarily learn how woman sounds, but memorises how Alice sounds. Needs further investigation.
