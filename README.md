@@ -19,14 +19,14 @@ Size of the data at this stage: 14.7 GB.
 
 The procedure involves putting safeguards against clipping (like audio normalisation) and then trimming "silence". It can happen that the process will eliminate all the signal; in this case we can either recover the signal or reject it.
 
-Further audio segmentation and its importance is discussed in [audio_descriptors_and_segmentation.ipynb](https://nbviewer.jupyter.org/github/rspb/mfmodel/blob/master/audio_descriptors_and_segmentation.ipynb) notebook.
+Further audio segmentation and its importance is discussed in [audio_descriptors_and_segmentation.ipynb](http://nbviewer.jupyter.org/github/tracek/mfmodel/blob/master/analysis/audio_descriptors_and_segmentation.ipynb) notebook.
 
 Trimming "silence" reduced the size to: 11.8 GB. Gender division is as follows:
 - Male: 78820 recordings, over 87 hours
 - Female: 15066 recordings, over 15 hours
 
 ## Data analysis
-Data analysis is covered in [data_analysis.ipynb](https://nbviewer.jupyter.org/github/rspb/mfmodel/blob/master/data_analysis.ipynb).
+Data analysis is covered in [data_analysis.ipynb](http://nbviewer.jupyter.org/github/tracek/mfmodel/blob/master/analysis/data_analysis.ipynb).
 
 ## Features
 Two distinctive data sets were built:
@@ -67,20 +67,20 @@ Description [here](http://yaafe.sourceforge.net/features.html).
 
 ## Model
 Two models were built using:
-- *acoustic parameters*: [notebook](https://nbviewer.jupyter.org/github/rspb/mfmodel/blob/master/model_warbler.ipynb), [csv with data](https://drive.google.com/open?id=1qZZTBPY6Ap0i5qr_e9xQbRNts7XMivs7).
-- *audio descriptors*: [notebook](https://nbviewer.jupyter.org/github/rspb/mfmodel/blob/master/model_descriptors.ipynb), [csv with data](https://drive.google.com/open?id=1xwKHHrOgDj_0269OkYFpmDBNYg4rbxKq).
+- *acoustic parameters*: [notebook](http://nbviewer.jupyter.org/github/tracek/mfmodel/blob/master/analysis/model_warbler.ipynb), [csv with data](https://drive.google.com/open?id=1qZZTBPY6Ap0i5qr_e9xQbRNts7XMivs7).
+- *audio descriptors*: [notebook](http://nbviewer.jupyter.org/github/tracek/mfmodel/blob/master/analysis/model_descriptors.ipynb), [csv with data](https://drive.google.com/open?id=1xwKHHrOgDj_0269OkYFpmDBNYg4rbxKq).
 
 Nature of the features points towards tree-based algorithms; after all, we expect that it is a matter of e.g. checking if fundamental frequency is above X and feature *Boo* is withing certain bounds, than it's a *male* voice.
 
 ### Machine learning algorithm
 
-One of the most accomplished libraries with tree-based algorithms is [XGBoost](https://github.com/dmlc/xgboost) - very fast, parallel and effective implementation of [*boosted trees*](https://arxiv.org/abs/1603.02754). Decent hyperparameters were found with grid search: [model_gridsearch.py](model_gridsearch.py).
+One of the most accomplished libraries with tree-based algorithms is [XGBoost](https://github.com/dmlc/xgboost) - very fast, parallel and effective implementation of [*boosted trees*](https://arxiv.org/abs/1603.02754). Decent hyperparameters were found with grid search: [model_gridsearch.py](analysis/model_gridsearch.py).
 
 ### Results
 
 **Accuracy on test data set: 99.35%**
 
-In summary, somewhat surprisingly, turns out the approach with *audio descriptors* is winning. The model converges faster and delivers better results than one build on *acoustic parameters*. Combined, we obtain the [**ultimate model**](https://nbviewer.jupyter.org/github/rspb/mfmodel/blob/master/model_combined.ipynb).
+In summary, somewhat surprisingly, turns out the approach with *audio descriptors* is winning. The model converges faster and delivers better results than one build on *acoustic parameters*. Combined, we obtain the [**ultimate model**](http://nbviewer.jupyter.org/github/tracek/mfmodel/blob/master/analysis/model_combined.ipynb).
 
-The [model_combined.ipynb](https://nbviewer.jupyter.org/github/rspb/mfmodel/blob/master/model_combined.ipynb) provides also short discussion of results and errors.
+The [model_combined.ipynb](http://nbviewer.jupyter.org/github/tracek/mfmodel/blob/master/analysis/model_combined.ipynb) provides also short discussion of results and errors.
 
