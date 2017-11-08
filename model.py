@@ -1,83 +1,94 @@
-import os
-import argparse
-import logging
-from multiprocessing import Pool, cpu_count
-from functools import partial
+import time
+import configobj
+import xgboost as xg
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn import metrics
+from validate import Validator
+from sklearn.model_selection import train_test_split
 
-from appconfig import setup_logging
-from download import get_links, download_and_extract
-from preprocess import preprocess, trim_and_convert
-from extract_features import get_audio_descriptors
-from train import train_model, split_data
-from evaluate import evaluate_model
+
+def split_data(X, y, val_fraction, test_fraction, seed=42):
+    if isinstance(y, str):
+        y = X.pop(y)
+    if test_fraction > 0.0:
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_fraction, random_state=seed, stratify=y)
+        X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=val_fraction, random_state=seed, stratify=y_train)
+        dtest = xg.DMatrix(X_test, label=y_test)
+        dtrain = xg.DMatrix(X_train, label=y_train)
+        dval = xg.DMatrix(X_val, label=y_val)
+        return dtrain, dval, dtest
+    else:
+        X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=val_fraction, random_state=seed, stratify=y)
+        dtrain = xg.DMatrix(X_train, label=y_train)
+        dval = xg.DMatrix(X_val, label=y_val)
+        return dtrain, dval
+
+
+def train(dtrain, dval, params=None, boost_rounds=500, early_stopping_rounds=5):
+    if not params:
+        config = configobj.ConfigObj('xgboost_params.ini', configspec='xgboost_params_specs.ini')
+        assert config.validate(Validator()), 'xgboost_params.ini contains error'
+        params = config['xgboost']
+
+    evallist = [(dval, 'eval'), (dtrain, 'train')]
+    model = xg.train(params=params,
+                     dtrain=dtrain,
+                     num_boost_round=boost_rounds,
+                     evals=evallist,
+                     early_stopping_rounds=early_stopping_rounds)
+    return model
+
+
+def _remove_spaces_in_feature_names(X):
+    return [name.replace(' ', '') for name in X.feature_names]
+
+
+def evaluate(model, dtest, figure_name=None):
+    y_pred_prob = model.predict(dtest)
+    y_pred = (y_pred_prob > 0.5).astype(int)
+    y_test = dtest.get_label().astype(int)
+
+    precision_avg, recall_avg, _, _ = metrics.precision_recall_fscore_support(y_test, y_pred, average='micro')
+    cm = metrics.confusion_matrix(y_true=y_test, y_pred=y_pred)
+
+    model.feature_names = _remove_spaces_in_feature_names(model)
+
+    results = {
+        'accuracy': metrics.accuracy_score(y_true=y_test, y_pred=y_pred),
+        'classification_report': metrics.classification_report(y_true=y_test, y_pred=y_pred),
+        'confusion_matrix': cm,
+        'precision_avg': precision_avg,
+        'recall_avg': recall_avg,
+    }
+
+    if figure_name:
+        precision, recall, _ = metrics.precision_recall_curve(y_test, y_pred_prob)
+        f, (ax1, ax2, ax3) = plt.subplots(nrows=3, ncols=1, figsize=(10, 30), gridspec_kw={'height_ratios': [1, 2, 3]})
+        ax1.step(recall, precision, color='b', alpha=0.2, where='post')
+        ax1.fill_between(recall, precision, step='post', alpha=0.2, color='b')
+        ax1.set_xlabel('Recall')
+        ax1.set_ylabel('Precision')
+        ax1.set_ylim([0.0, 1.05])
+        ax1.set_xlim([0.0, 1.0])
+        ax1.set_title('2-class Precision-Recall curve: AP={0:0.2f}'.format(precision_avg))
+        sns.heatmap(cm, annot=True, annot_kws={"size": 16}, cmap='Blues', fmt='g', square=True,
+                    xticklabels=['Male', 'Female'], yticklabels=['Male', 'Female'], ax=ax2)
+        ax2.set_title('Confusion matrix')
+        xg.plot_importance(model, ax3)
+        f.savefig(figure_name)
+
+    return results
+
 
 def main():
-    setup_logging()
-    parse_args()
+    t0 = time.time()
 
+    config = configobj.ConfigObj('xgboost_params.ini', configspec='xgboost_params_specs.ini')
+    validation_successful = config.validate(Validator())
+    print(config['xgboost'])
 
-def train(args):
-    get_data(source=args.source, target=os.path.join(args.dest, 'raw/'), njobs=args.download_jobs)
-    preprocessed_data_path = os.path.join(args.dest, 'preprocessed/')
-    preprocess(download_folder=os.path.join(args.dest, 'raw/'), output_dir=preprocessed_data_path, njobs=args.compute_jobs)
-    audio_descriptors = get_audio_descriptors(source=preprocessed_data_path, sr=16000).drop(['filename'], axis=1)
-    dtrain, dval, dtest = split_data(audio_descriptors, 'label', val_fraction=0.2, test_fraction=0.1)
-    model = train_model(dtrain, dval)
-    results = evaluate_model(model, dtest, figure_name='report.png')
-
-    print('Model accuracy: {:.2f}%'.format(results['accuracy'] * 100))
-    print(results['classification_report'])
-    model.save_model('model.xgb')
-
-
-def get_data(source, target, njobs):
-    os.makedirs(target, exist_ok=True)
-    links = get_links(source)
-    already_downloaded = os.listdir(target)
-    archives_all = [os.path.splitext(os.path.basename(link))[0] for link in links]
-    folders_left_to_download = set(archives_all) - set(already_downloaded)
-    links_left_to_download = [source + '/' + folder + '.wav' for folder in folders_left_to_download]
-    logging.info('%d archives left do download.', len(links_left_to_download))
-
-    if len(links_left_to_download) == 0:
-        logging.info('Nothing left to do, exiting.')
-    else:
-        if njobs > 1:
-            download_wrapper = partial(download_and_extract, target)
-            pool = Pool(njobs)
-            pool.map(download_wrapper, links)
-            pool.close()
-            pool.join()
-        else:
-            for link in links:
-                download_and_extract(target=target, url=link)
-
-def parse_args():
-    default_target = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data')
-    default_source = 'http://www.repository.voxforge1.org/downloads/SpeechCorpus/Trunk/Audio/Main/16kHz_16bit'
-
-    parser = argparse.ArgumentParser(description='Gender Recognition From Audio')
-    subparsers = parser.add_subparsers()
-
-    parser_train = subparsers.add_parser('train', help='Make a prediction on a single file')
-    parser_train.add_argument('-d', '--dest', help='Path to the target directory.', default=default_target)
-    parser_train.add_argument('-s', '--source', help='Path to the web repository', default=default_source)
-    parser_train.add_argument('--download_jobs', help='Number of download jobs', default=4, type=int)
-    parser_train.add_argument('--compute_jobs', help='Number of compute jobs', default=cpu_count(), type=int)
-    parser_train.set_defaults(func=train)
-
-    parser_predict = subparsers.add_parser('predict', help='Make a prediction on a single file')
-    parser_predict.add_argument('path', help='Path to the file.')
-    parser_predict.set_defaults(func=predict)
-    args = parser.parse_args()
-
-    args.func(args)
-
-
-
-def predict(args):
-    logging.info('Processing: %s', args.path)
-    tmpfilepath = trim_and_convert(args.path)
+    print('Run time: {:.2f} s'.format(time.time() - t0))
 
 
 if __name__ == '__main__':
