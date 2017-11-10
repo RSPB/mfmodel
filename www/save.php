@@ -93,7 +93,13 @@ function selfInvoker()
         echo 'Problem saving file: '.$tempName;
 	
     }
-    return;
+    //$mystring = system('/home/tracek/Projects/qqq.sh', $retval);
+    $mystring = system('/home/tracek/Projects/mfmodel/run.sh', $retval);
+    $pos = strpos($mystring, "%");
+    $mystring2 = substr($mystring, $pos+1);
+// $mystring = system('source /home/tracek/venv/ml/bin/activate && python /home/tracek/Projects/hello.py', $retval);
+    // $myJSON = json_encode($gender);
+    echo $mystring2; //  $myJSON; #  $gender;
     # echo 'success';
 }
 /*
